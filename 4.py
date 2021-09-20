@@ -1,4 +1,7 @@
+#Exercise 6 - spider
+
 import turtle
+
 turtle.shape('turtle')
 turtle.speed(10)
 n = 20

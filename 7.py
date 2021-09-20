@@ -1,10 +1,11 @@
+#Exercise 9 - regular polygons
+
 import math
 import turtle
 
 turtle.shape('turtle')
 turtle.speed(10)
 turtle.left(90)
-
 
 def figure(n, l):
     angle = 180 - 180 * (n - 2) / n
@@ -13,7 +14,6 @@ def figure(n, l):
         turtle.forward(l)
         turtle.left(angle)
     turtle.right(angle / 2 + 90)
-
 
 r = 50
 c = 10

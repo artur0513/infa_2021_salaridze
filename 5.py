@@ -1,14 +1,16 @@
+#Exercise 6 - spiral
+
 import turtle
-import math
 
 turtle.shape('turtle')
 turtle.speed(10)
-n = 2000
-k = 0.1
+
+n = 1000
+k = 0.002
+step = 2
 
 for i in range(n):
-    c = math.cos(i*math.pi/180)
-    s = math.sin(i*math.pi/180)
-    turtle.setpos(k*i*c, k*i*s)
+    turtle.right(step)
+    turtle.forward(k*i)
 
 turtle.done()
