@@ -1,3 +1,5 @@
+#Exercise 3 - square
+
 import turtle
 
 turtle.shape('turtle')
