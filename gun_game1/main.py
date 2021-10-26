@@ -1,78 +1,145 @@
-from random import randrange as rnd, choice
-import tkinter as tk
 import math
-import time
+import random
 
-# print (dir(math))
+import pygame
 
-root = tk.Tk()
-fr = tk.Frame(root)
-root.geometry('800x600')
-canv = tk.Canvas(root, bg='white')
-canv.pack(fill=tk.BOTH, expand=1)
+pygame.font.init()
+font = pygame.font.Font(None, 25)
+
+FPS = 30
+
+RED = 0xFF0000
+BLUE = 0x0000FF
+YELLOW = 0xFFC91F
+GREEN = 0x00FF00
+MAGENTA = 0xFF03B8
+CYAN = 0x00FFCC
+BLACK = (20, 20, 20)
+WHITE = 0xFFFFFF
+GREY = 0x7D7D7D
+GAME_COLORS = [RED, BLUE, YELLOW, GREEN, MAGENTA, CYAN]
+TANKGREEN = (100, 120, 70)
+
+WIDTH = 800
+HEIGHT = 600
+
+pygame.init()
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.SRCALPHA)
+
+tanksurf = pygame.Surface((300, 300))
+tanksurf.set_colorkey((0, 0, 0))
+pygame.draw.circle(tanksurf, GREY, (50, 250), 40)
+pygame.draw.circle(tanksurf, GREY, (250, 250), 40)
+pygame.draw.rect(tanksurf, GREY, (50, 210, 200, 80))
+pygame.draw.circle(tanksurf, BLACK, (50, 250), 30)
+pygame.draw.circle(tanksurf, BLACK, (250, 250), 30)
+pygame.draw.circle(tanksurf, BLACK, (100, 250), 30)
+pygame.draw.circle(tanksurf, BLACK, (150, 250), 30)
+pygame.draw.circle(tanksurf, BLACK, (200, 250), 30)
+pygame.draw.polygon(tanksurf, TANKGREEN, ((0, 230), (60, 170), (60, 230)))
+pygame.draw.polygon(tanksurf, TANKGREEN, ((300, 230), (240, 170), (240, 230)))
+pygame.draw.rect(tanksurf, TANKGREEN, (60, 170, 180, 60))
+pygame.draw.circle(tanksurf, TANKGREEN, (150, 170), 60)
+
+def draw_tank(surface, x , y, scale=1):
+    if scale != 1:
+        tanksurf_tranformed = pygame.transform.scale(tanksurf, (round(300*scale), round(300*scale)))
+        surface.blit(tanksurf_tranformed, (x, y))
+    else:
+        surface.blit(tanksurf, (x, y))
 
 
-class ball():
-    def __init__(self, x=40, y=450):
+class Particle:
+    def __init__(self, x, y, alpha, r, screen):
+        self.x = x
+        self.y = y
+        self.r = r
+        self.vy = 0
+        self.vx = random.randint(-3, 3)
+        self.velocity = 1
+        self.alpha = alpha
+        self.screen = screen
+    def update(self):
+        self.vy += self.velocity
+        self.y -= self.vy
+        self.x += self.vx
+        self.r += 2
+        self.alpha -= 2
+        self.partsurface = pygame.Surface((self.r*2, self.r*2))
+        pygame.draw.circle(self.partsurface, GREY, (self.r, self.r), self.r)
+        self.partsurface.set_colorkey((0,0,0))
+        self.partsurface.set_alpha(self.alpha)
+        screen.blit(self.partsurface, (self.x - self.r, self.y - self.r))
+
+
+class Ball:
+    def __init__(self, _screen, x=40, y=450):
         """ Конструктор класса ball
 
         Args:
         x - начальное положение мяча по горизонтали
         y - начальное положение мяча по вертикали
         """
+        self.screen = _screen
         self.x = x
         self.y = y
         self.r = 10
         self.vx = 0
         self.vy = 0
-        self.c = 0
-        self.max_c = 0
-
-        self.color = choice(['blue', 'green', 'red', 'brown'])
-        self.id = canv.create_oval(
-            self.x - self.r,
-            self.y - self.r,
-            self.x + self.r,
-            self.y + self.r,
-            fill=self.color
-        )
+        self.color = random.choice(GAME_COLORS)
         self.live = 30
+        self.alpha = 255
 
-    def set_coords(self):
-        canv.coords(
-            self.id,
-            self.x - self.r,
-            self.y - self.r,
-            self.x + self.r,
-            self.y + self.r
-        )
+        self.max_c = 6
+        self.c = 0
 
-    def move(self):
+    def update(self):
         """Переместить мяч по прошествии единицы времени.
 
         Метод описывает перемещение мяча за один кадр перерисовки. То есть, обновляет значения
         self.x и self.y с учетом скоростей self.vx и self.vy, силы гравитации, действующей на мяч,
         и стен по краям окна (размер окна 800х600).
         """
-        # FIXME
         self.x += self.vx
         self.y -= self.vy
-        self.set_coords()
 
-        if self.x > 800-self.r and self.vx > 0:
+        if self.x > WIDTH - self.r and self.vx > 0:
             self.vx *= -0.6
             self.vy *= 0.8
+            self.x = WIDTH - self.r
             self.c += 1
-        if self.y > 600-self.r and self.vy < 0:
+        if self.y > HEIGHT - self.r and self.vy < 0:
             self.vy *= -0.6
             self.vx *= 0.8
+            self.y = HEIGHT - self.r
             self.c += 1
         if self.c > self.max_c:
-            self.vy = 0
-            self.vx = 0
-        else:
-            self.vy -= 1
+            if self.alpha > 0:
+                self.alpha -= 4
+            else:
+                self.alpha = 0
+        self.vy -= 1
 
+    def collisioncheck(self, obj):
+        distance = (self.x - obj.x) ** 2 + (self.y - obj.y) ** 2 - (self.r + obj.r) ** 2
+        if distance < 0:
+            p1 = complex(self.x, self.y)
+            p2 = complex(obj.x, obj.y)
+            v1 = complex(self.vx, self.vy)
+            v2 = complex(obj.vx, obj.vy)
+            p12 = p1 - p2
+            d = ((v1 - v2) / p12).real * p12
+            self.vx = (v1 - d).real
+            self.vy = (v1 - d).imag
+            obj.vx = (v2 + d).real
+            obj.vy = (v2 + d).imag
+
+    def draw(self):
+        self.surface1 = pygame.Surface((self.r*2, self.r*2))
+        self.surface1.set_alpha(self.alpha)
+        pygame.draw.circle(self.surface1, self.color, (self.r, self.r), self.r)
+        self.surface1.set_colorkey((0, 0, 0))
+        screen.blit(self.surface1, (self.x - self.r, self.y - self.r))
 
     def hittest(self, obj):
         """Функция проверяет сталкивалкивается ли данный обьект с целью, описываемой в обьекте obj.
@@ -82,24 +149,42 @@ class ball():
         Returns:
             Возвращает True в случае столкновения мяча и цели. В противном случае возвращает False.
         """
-        # FIXME
-        dist = (self.x - obj.x)**2 + (self.y - obj.y)**2 - (self.r + obj.r)**2
+        dist = (self.x - obj.x) ** 2 + (self.y - obj.y) ** 2 - (self.r + obj.r) ** 2
         if dist > 0:
             return False
         else:
             return True
 
 
-
-class gun():
-    def __init__(self):
+class Gun:
+    def __init__(self, screen):
+        self.screen = screen
         self.f2_power = 10
         self.f2_on = 0
         self.an = 1
-        self.id = canv.create_line(20, 450, 50, 420, width=7)  # FIXME: don't know how to set it...
+        self.color = GREY
+
+        self.timer = 0
+
+        self.x = 100
+        self.y = 540
+
+        self.vx = 0
+        self.maxspeed = 3
+        self.velocity = 0
+
+        self.moving_right = False
+        self.moving_left = False
+
+        self.reloadtime = self.defreloadtime = 90
+        self.bulletsleft = self.defbulletsleft = 5
+
+        self.fuel = 3000
+        self.fuellinecolor = GREEN
 
     def fire2_start(self, event):
-        self.f2_on = 1
+        if self.bulletsleft > 0:
+            self.f2_on = 1
 
     def fire2_end(self, event):
         """Выстрел мячом.
@@ -108,103 +193,236 @@ class gun():
         Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
         """
         global balls, bullet
-        bullet += 1
-        new_ball = ball()
-        new_ball.r += 5
-        self.an = math.atan((event.y - new_ball.y) / (event.x - new_ball.x))
-        new_ball.vx = self.f2_power * math.cos(self.an)
-        new_ball.vy = - self.f2_power * math.sin(self.an)
-        new_ball.max_c = math.log(2 / self.f2_power, 0.6)
-        balls += [new_ball]
-        self.f2_on = 0
-        self.f2_power = 10
+        if self.bulletsleft > 0:
+            bullet += 1
+            new_ball = Ball(self.screen, self.x, self.y)
+            new_ball.r += 5
+            self.an2 = math.atan2((event.pos[1]-new_ball.y), (event.pos[0]-new_ball.x))
+            new_ball.vx = self.f2_power * math.cos(self.an2)
+            new_ball.vy = - self.f2_power * math.sin(self.an2)
+            balls.append(new_ball)
+            self.f2_on = 0
+            self.f2_power = 10
+            self.bulletsleft -= 1
 
-    def targetting(self, event=0):
+    def targetting(self, event):
         """Прицеливание. Зависит от положения мыши."""
         if event:
-            self.an = math.atan((event.y - 450) / (event.x - 20))
+            self.an = - math.atan2((event.pos[1]-self.y), (event.pos[0]-self.x))
         if self.f2_on:
-            canv.itemconfig(self.id, fill='orange')
+            self.color = RED
         else:
-            canv.itemconfig(self.id, fill='black')
-        canv.coords(self.id, 20, 450,
-                    20 + max(self.f2_power, 20) * math.cos(self.an),
-                    450 + max(self.f2_power, 20) * math.sin(self.an)
-                    )
+            self.color = GREY
+
+    def update(self):
+        self.timer = (self.timer + 1)%1000
+        if self.an < 0 and self.an > -math.pi/2:
+            self.an = 0
+        if self.an < 0 and self.an < -math.pi/2:
+            self.an = math.pi
+        self.sin = math.sin(self.an)
+        self.cos = math.cos(self.an)
+        self.gunxcoord = self.x + (30 + self.f2_power)*self.cos
+        self.gunycoord = self.y - (30 + self.f2_power)*self.sin
+        pygame.draw.polygon(self.screen, BLACK, ((self.x - 5*self.sin, self.y-5*self.cos), (self.x + 5*self.sin, self.y + 5*self.cos),
+                                                 (self.gunxcoord + 5*self.sin, self.gunycoord + 5*self.cos),
+                                                 (self.gunxcoord - 5*self.sin, self.gunycoord - 5*self.cos)))
+
+        draw_tank(self.screen, self.x - 75, self.y - 85, 0.5)
+
+        if self.bulletsleft == 0 and self.reloadtime > 0:
+            self.reloadtime -= 1
+            text = font.render("Reloading: ", True, (0, 0, 0))
+            self.screen.blit(text, (50, 50))
+            pygame.draw.line(self.screen, RED, (150, 60), (150 + self.reloadtime, 60), 10)
+        if self.reloadtime == 0:
+            self.reloadtime = self.defreloadtime
+            self.bulletsleft = self.defbulletsleft
+
+        text = font.render("Bullets left: " + str(round(self.bulletsleft)), True, (0, 0, 0))
+        self.screen.blit(text, (50, 30))
+
+        text = font.render("Fuel left: ", True, (0, 0, 0))
+        self.screen.blit(text, (50 ,10))
+        if self.fuel > 0:
+            pygame.draw.line(self.screen, self.fuellinecolor, (130, 18), (130 + self.fuel/33.3, 18), 10)
+
+
+        if self.fuel > 0:
+            if self.moving_left:
+                self.vx = -self.maxspeed
+
+            if self.moving_right:
+                self.vx = self.maxspeed
+
+            if (self.moving_left or self.moving_right) and self.timer % 2 == 0:
+                new_particle = Particle(self.x - 60, self.y + 8, 40, 4, self.screen)
+                particles.append(new_particle)
+                self.fuel -= 5
+
+            elif self.timer % 5 == 0:
+                new_particle = Particle(self.x - 60, self.y + 8, 40, 2, self.screen)
+                particles.append(new_particle)
+                self.fuel -= 2
+
+            self.x += self.vx
+            if abs(self.vx) > 1:
+                self.fuellinecolor = RED
+                self.vx -= 0.5 * self.vx / abs(self.vx)
+            else:
+                self.fuellinecolor = GREEN
+                self.vx = 0
+        else:
+            self.fuel = 0
+
+
+
+    def move(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_a:
+                self.moving_left = True
+            if event.key == pygame.K_d:
+                self.moving_right = True
+            if event.key == pygame.K_r and self.bulletsleft != self.defbulletsleft:
+                self.bulletsleft = 0
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_a:
+                self.moving_left = False
+            if event.key == pygame.K_d:
+                self.moving_right = False
+
 
     def power_up(self):
         if self.f2_on:
             if self.f2_power < 100:
                 self.f2_power += 1
-            canv.itemconfig(self.id, fill='orange')
+            self.color = RED
         else:
-            canv.itemconfig(self.id, fill='black')
+            self.color = GREY
 
 
-class target():
-    def __init__(self):
-        """ Инициализация новой цели. """
-        self.points = 0
-        self.live = 1
-        self.id = canv.create_oval(0, 0, 0, 0)
-        self.id_points = canv.create_text(30, 30, text=self.points, font='28')
-        x = self.x = rnd(600, 780)
-        y = self.y = rnd(300, 550)
-        r = self.r = rnd(2, 50)
-        color = self.color = 'red'
-        canv.coords(self.id, x - r, y - r, x + r, y + r)
-        canv.itemconfig(self.id, fill=color)
+class Target:
+    def __init__(self, _screen, _movingtype = 0):
+        self.screen = _screen
+        self.movingtype = _movingtype
+
+        self.live = True
+        self.defcooldown = self.cooldown = 90
+
+        x = self.x = random.randint(500, 780)
+        y = self.y = random.randint(200, 550)
+        r = self.r = random.randint(10, 30)
+        color = self.color = RED
+        self.reward = 60 - self.r
+
+        if self.movingtype == 1:
+            self.startpoint = self.x
+            self.endpoint = self.x + random.randint(-200, -50)
+            self.speed = random.randint(1, 4)
+
+        if self.movingtype == 2:
+            self.startpoint = self.y
+            self.endpoint = self.y + random.randint(-200, -50)
+            self.speed = random.randint(1, 4)
 
     def new_target(self):
-        x = self.x = rnd(600, 780)
-        y = self.y = rnd(300, 550)
-        r = self.r = rnd(2, 50)
-        color = self.color = 'red'
-        canv.coords(self.id, x - r, y - r, x + r, y + r)
-        canv.itemconfig(self.id, fill=color)
+        """ Инициализация новой цели. """
+        x = self.x = random.randint(500, 780)
+        y = self.y = random.randint(200, 550)
+        r = self.r = random.randint(10, 30)
+        color = self.color = RED
+        self.reward = 60 - self.r
 
-    def hit(self, points=1):
+        if self.movingtype == 1:
+            self.startpoint = self.x
+            self.endpoint = self.x + random.randint(-200, -50)
+            self.speed = random.randint(1, 4)
+
+        if self.movingtype == 2:
+            self.startpoint = self.y
+            self.endpoint = self.y + random.randint(-200, -50)
+            self.speed = random.randint(1, 4)
+
+    def hit(self):
         """Попадание шарика в цель."""
-        canv.coords(self.id, -10, -10, -10, -10)
-        self.points += points
-        canv.itemconfig(self.id_points, text=self.points)
+        if self.live:
+            self.new_target()
+            self.live = False
+            return self.reward
+        else:
+            return 0
+
+    def draw(self):
+        pygame.draw.circle(self.screen, self.color, (self.x, self.y), self.r)
+
+    def update(self):
+        if not self.live:
+            if self.cooldown > 0:
+                self.cooldown -= 1
+            else:
+                self.cooldown = self.defcooldown
+                self.live = True
+        else:
+            self.draw()
+        if self.movingtype == 1:
+            self.x += self.speed
+            if self.x < self.endpoint or self.x > self.startpoint:
+                self.speed *= -1
+
+        if self.movingtype == 2:
+            self.y += self.speed
+            if self.y < self.endpoint or self.y > self.startpoint:
+                self.speed *= -1
 
 
-t1 = target()
-screen1 = canv.create_text(400, 300, text='', font='28')
-g1 = gun()
+points = 0
 bullet = 0
 balls = []
+particles = []
 
+clock = pygame.time.Clock()
+gun = Gun(screen)
+targets = [Target(screen, i%3) for i in range(6)]
+finished = False
 
-def new_game(event=''):
-    global gun, t1, screen1, balls, bullet
-    t1.new_target()
-    bullet = 0
-    balls = []
-    canv.bind('<Button-1>', g1.fire2_start)
-    canv.bind('<ButtonRelease-1>', g1.fire2_end)
-    canv.bind('<Motion>', g1.targetting)
+while not finished:
+    clock.tick(FPS)
+    pygame.draw.rect(screen, WHITE, (0, 0, WIDTH, HEIGHT))
+    gun.update()
+    for p in particles:
+        p.update()
+        if p.alpha < 0:
+            particles.remove(p)
+    for t in targets:
+        t.update()
+    for b in balls:
+        if b.alpha == 0:
+            balls.remove(b)
+        b.draw()
+    text = font.render("Score: " + str(round(points)), True, (0, 0, 0))
+    screen.blit(text, (WIDTH - 150, 30))
+    pygame.display.update()
 
-    z = 0.03
-    t1.live = 1
-    while t1.live or balls:
-        for b in balls:
-            b.move()
-            if b.hittest(t1) and t1.live:
-                t1.live = 0
-                t1.hit()
-                canv.bind('<Button-1>', '')
-                canv.bind('<ButtonRelease-1>', '')
-                canv.itemconfig(screen1, text='Вы уничтожили цель за ' + str(bullet) + ' выстрелов')
-        canv.update()
-        time.sleep(0.03)
-        g1.targetting()
-        g1.power_up()
-    canv.itemconfig(screen1, text='')
-    canv.delete(gun)
-    root.after(750, new_game)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            finished = True
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            gun.fire2_start(event)
+        elif event.type == pygame.MOUSEBUTTONUP:
+            gun.fire2_end(event)
+        elif event.type == pygame.MOUSEMOTION:
+            gun.targetting(event)
+        else:
+            gun.move(event)
 
+    for b in balls:
+        b.update()
+        for t in targets:
+            if b.hittest(t):
+                points += t.hit()
+        for b2 in balls:
+            if b2 != b:
+                b.collisioncheck(b2)
+    gun.power_up()
 
-new_game()
-# mainloop()
+pygame.quit()
