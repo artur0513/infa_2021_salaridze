@@ -16,7 +16,7 @@ MAGENTA = 0xFF03B8
 CYAN = 0x00FFCC
 BLACK = (20, 20, 20)
 WHITE = 0xFFFFFF
-GREY = (120, 120, 120)
+GREY = (150, 150, 150)
 GAME_COLORS = [RED, BLUE, YELLOW, GREEN, MAGENTA, CYAN]
 TANKGREEN = (100, 120, 70)
 
@@ -43,87 +43,16 @@ pygame.draw.rect(tanksurf, TANKGREEN, (60, 170, 180, 60))
 pygame.draw.circle(tanksurf, TANKGREEN, (150, 170), 60)
 
 #Размещаем поверхность с танком на заданной поверхности, в координатах x, y и с масштабом scale
-def draw_tank(surface, x , y, scale=1, color = TANKGREEN):
-    tanknewsurf = tanksurf
-    pygame.draw.polygon(tanknewsurf, color, ((0, 230), (60, 170), (60, 230)))
-    pygame.draw.polygon(tanknewsurf, color, ((300, 230), (240, 170), (240, 230)))
-    pygame.draw.rect(tanknewsurf, color, (60, 170, 180, 60))
-    pygame.draw.circle(tanknewsurf, color, (150, 170), 60)
+def draw_tank(surface, x , y, scale=1):
     if scale != 1:
         tanksurf_tranformed = pygame.transform.scale(tanksurf, (round(300*scale), round(300*scale)))
         surface.blit(tanksurf_tranformed, (x, y))
     else:
         surface.blit(tanksurf, (x, y))
 
-def help():
-    clock_help = pygame.time.Clock()
-    help_active = True
-    help_text = []
-    text = []
-
-    help_text.append("Управление у первого игрока: ")
-    help_text.append("   A, D - двигать танк; W, S - целиться;")
-    help_text.append("   E - зажимать для стрельбы; R - перезарядка;")
-
-    help_text.append("Управление у второго игрока: ")
-    help_text.append("   стрелочки вправо и влево - двигать танк;")
-    help_text.append("   стрелочки вверх и вниз - целиться;")
-    help_text.append("   RSHIFT - зажимать для стрельбы;")
-    help_text.append("   RCTRL - перезарядка;")
-
-    help_text.append("Если патроны закончились - ")
-    help_text.append("                        перезаряжаться нужно вручную")
-
-    text.append(font.render(help_text[0], True, BLACK))
-    text.append(font.render(help_text[1], True, BLACK))
-    text.append(font.render(help_text[2], True, BLACK))
-    text.append(font.render(help_text[3], True, BLACK))
-    text.append(font.render(help_text[4], True, BLACK))
-    text.append(font.render(help_text[5], True, BLACK))
-    text.append(font.render(help_text[6], True, BLACK))
-    text.append(font.render(help_text[7], True, BLACK))
-    text.append(font.render(help_text[8], True, BLACK))
-    text.append(font.render(help_text[9], True, BLACK))
-
-    size_x = 500
-    size_y = 400
-    help_x = 150
-    help_y = 125
-
-    exitbutton = Button(screen, help_x + size_x/2 - 50, help_y + size_y - 60, 100, 50, "back", 1)
-
-    while help_active:
-        clock_help.tick(FPS)
-        pygame.draw.rect(screen, WHITE, (0, 0, WIDTH, HEIGHT))
-
-        exitbutton.draw()
-
-        helpsurface2 = pygame.Surface((size_x, size_y))
-        helpsurface2.set_colorkey((0, 0, 0))
-        pygame.draw.rect(helpsurface2, GREY, (0, 0, size_x, size_y), 7)
-        screen.blit(helpsurface2, (help_x + 3, help_y + 3))
-
-        helpsurface1 = pygame.Surface((size_x, size_y))
-        helpsurface1.set_colorkey((0, 0, 0))
-        pygame.draw.rect(helpsurface1, BLACK, (0, 0, size_x, size_y), 7)
-        screen.blit(helpsurface1, (help_x, help_y))
-
-        y = help_y + 10
-        for i in range(10):
-            screen.blit(text[i], (help_x + 10, y))
-            y += text[i].get_height()
-
-        pygame.display.update()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-            if exitbutton.check(event):
-                help_active = False
-
 #Класс отвечающий за кнопки
 class Button:
-    def __init__(self, surface, x, y, width, height, buttontext, buttontype = 0):
+    def __init__(self, surface, x, y, width, height, buttontext):
         """
         :param surface: Поверхность для отрисовки кнопки
         :param x: Координата x левого верхнего угла кнопки
@@ -137,7 +66,6 @@ class Button:
         self.y = y
         self.width = width
         self.height = height
-        self.buttontype = buttontype
 
         #Рисуем поверхность с черной кнопкой
         self.buttonsurf = pygame.Surface((self.width, self.height))
@@ -171,24 +99,14 @@ class Button:
 
     def check(self, event):
         #Проверка на нажатие кнопки
-        if self.buttontype == 0:
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if self.x < event.pos[0] < self.x + self.width:
-                    if self.y < event.pos[1] < self.y + self.height:
-                        self.pressed = True
-                        return True
-            if event.type == pygame.MOUSEBUTTONUP and self.pressed == True:
-                self.nexttick = True
-            return False
-        if self.buttontype == 1:
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if self.x < event.pos[0] < self.x + self.width:
-                    if self.y < event.pos[1] < self.y + self.height:
-                        self.pressed = True
-            if event.type == pygame.MOUSEBUTTONUP and self.pressed == True:
-                self.nexttick = True
-                return True
-            return False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.x < event.pos[0] < self.x + self.width:
+                if self.y < event.pos[1] < self.y + self.height:
+                    self.pressed = True
+                    return True
+        if event.type == pygame.MOUSEBUTTONUP and self.pressed == True:
+            self.nexttick = True
+        return False
 
 #Класс для эффектов выхлопных газов от танка (создает летающие шарики серого цвета)
 class Particle:
@@ -242,11 +160,8 @@ class Ball:
         self.max_c = 6
         self.c = 0
 
-        self.parent = None
-
     def update(self):
         """Переместить мяч по прошествии единицы времени. И обработать столкновение со стенками.
-
         Метод описывает перемещение мяча за один кадр перерисовки. То есть, обновляет значения
         self.x и self.y с учетом скоростей self.vx и self.vy, силы гравитации, действующей на мяч,
         и стен по краям окна (размер окна 800х600).
@@ -263,11 +178,6 @@ class Ball:
             self.vy *= -0.6
             self.vx *= 0.8
             self.y = HEIGHT - self.r
-            self.c += 1
-        if self.x < self.r and self.vx < 0:
-            self.vx *= -0.6
-            self.vy *= 0.8
-            self.x = self.r
             self.c += 1
         if self.c > self.max_c:
             if self.alpha > 0:
@@ -314,7 +224,7 @@ class Ball:
 
 #Класс отвечающий за пушку и ее перемещение
 class Gun:
-    def __init__(self, screen, controltype = 1):
+    def __init__(self, screen):
         self.screen = screen
         self.f2_power = 10
         self.f2_on = 0
@@ -342,45 +252,13 @@ class Gun:
         self.fuel = 3000
         self.fuellinecolor = GREEN
 
-        self.controltype = controltype
-        self.anup = False
-        self.andown = False
-
-        self.k_move_forward = pygame.K_d
-        self.k_move_backward = pygame.K_a
-        self.k_targeting_up = pygame.K_w
-        self.k_targeting_down = pygame.K_s
-        self.k_fire = pygame.K_e
-        self.k_reload = pygame.K_r
-
-        self.statx = 50
-        self.staty = 50
-
-        self.name = "Tank"
-        self.color = TANKGREEN
-
-        self.score = 0
-
-        self.reloading = False
-
-    def setgunstats(self, k_move_forward, k_move_backward, k_targeting_up, k_targeting_down, k_fire, k_reload, statx, staty):
-        self.k_move_forward = k_move_forward
-        self.k_move_backward = k_move_backward
-        self.k_targeting_up = k_targeting_up
-        self.k_targeting_down = k_targeting_down
-        self.k_fire = k_fire
-        self.k_reload = k_reload
-        self.statx = statx
-        self.staty = staty
-
-    def fire2_start(self):
+    def fire2_start(self, event):
         #Начать увеличивать мощность пушки (зажать ЛКМ)
         if self.bulletsleft > 0:
             self.f2_on = 1
 
-    def fire2_end(self):
+    def fire2_end(self, event):
         """Выстрел мячом.
-
         Происходит при отпускании кнопки мыши.
         Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
         """
@@ -389,9 +267,9 @@ class Gun:
             bullet += 1
             new_ball = Ball(self.screen, self.x, self.y)
             new_ball.r += 5
-            new_ball.vx = self.f2_power * math.cos(self.an)
-            new_ball.vy = - self.f2_power * math.sin(-self.an)
-            new_ball.parent = self
+            self.an2 = math.atan2((event.pos[1]-new_ball.y), (event.pos[0]-new_ball.x))
+            new_ball.vx = self.f2_power * math.cos(self.an2)
+            new_ball.vy = - self.f2_power * math.sin(self.an2)
             balls.append(new_ball)
             self.f2_on = 0
             self.f2_power = 10
@@ -399,48 +277,14 @@ class Gun:
 
     def targetting(self, event):
         """Прицеливание. Зависит от положения мыши."""
-        if self.controltype == 0:
-            if event.type == pygame.MOUSEMOTION:
-                self.mousex = event.pos[0]
-                self.mousey = event.pos[1]
-            self.an = - math.atan2((self.mousey-self.y), (self.mousex-self.x))
-            if self.f2_on:
-                self.color = RED
-            else:
-                self.color = GREY
-
-        if self.controltype == 1:
-            if event.type == pygame.KEYDOWN:
-                if event.key == self.k_targeting_up:
-                    self.anup = True
-                if event.key == self.k_targeting_down:
-                    self.andown = True
-            if event.type == pygame.KEYUP:
-                if event.key == self.k_targeting_up:
-                    self.anup = False
-                if event.key == self.k_targeting_down:
-                    self.andown = False
-
-    def drawstats(self):
-        text = font.render(self.name, True, (0, 0, 0))
-        self.screen.blit(text, (self.statx, self.staty - 20))
-
-        if self.reloading:
-            text = font.render("Reloading: ", True, (0, 0, 0))
-            self.screen.blit(text, (self.statx, self.staty + 60))
-            pygame.draw.line(self.screen, RED, (self.statx + text.get_width(), self.staty + text.get_height()/2 + 60), (self.statx + text.get_width() + self.reloadtime, self.staty + text.get_height()/2 + 60), 10)
-
-        text = font.render("Bullets left: " + str(round(self.bulletsleft)), True, (0, 0, 0))
-        self.screen.blit(text, (self.statx, self.staty + 40))
-
-        text = font.render("Fuel left: ", True, (0, 0, 0))
-        self.screen.blit(text, (self.statx, self.staty + 20))
-        if self.fuel > 0:
-            pygame.draw.line(self.screen, self.fuellinecolor, (self.statx + text.get_width(), text.get_height() / 2 + self.staty + 20),
-                            (self.statx + text.get_width() + self.fuel / 33.3, text.get_height() / 2 + self.staty + 20), 10)
-
-        text = font.render("Score: " + str(round(self.score)), True, (0, 0, 0))
-        self.screen.blit(text, (self.statx, self.staty))
+        if event.type == pygame.MOUSEMOTION:
+            self.mousex = event.pos[0]
+            self.mousey = event.pos[1]
+        self.an = - math.atan2((self.mousey-self.y), (self.mousex-self.x))
+        if self.f2_on:
+            self.color = RED
+        else:
+            self.color = GREY
 
     def update(self):
         """
@@ -452,18 +296,10 @@ class Gun:
         Перемещение танка на экране
         """
         self.timer = (self.timer + 1)%1000
-
-        if self.controltype == 1:
-            if self.anup:
-                self.an += 0.03
-            if self.andown:
-                self.an -= 0.03
-
-        if 0 > self.an:
+        if self.an < 0 and self.an > -math.pi/2:
             self.an = 0
-        if math.pi < self.an:
+        if self.an < 0 and self.an < -math.pi/2:
             self.an = math.pi
-
         self.sin = math.sin(self.an)
         self.cos = math.cos(self.an)
         self.gunxcoord = self.x + (30 + self.f2_power)*self.cos
@@ -472,16 +308,25 @@ class Gun:
                                                  (self.gunxcoord + 5*self.sin, self.gunycoord + 5*self.cos),
                                                  (self.gunxcoord - 5*self.sin, self.gunycoord - 5*self.cos)))
 
-        draw_tank(self.screen, self.x - 75, self.y - 85, 0.5, self.color)
+        draw_tank(self.screen, self.x - 75, self.y - 85, 0.5)
 
-        if self.reloading:
+        if self.bulletsleft == 0 and self.reloadtime > 0:
             self.reloadtime -= 1
+            text = font.render("Reloading: ", True, (0, 0, 0))
+            self.screen.blit(text, (50, 50))
+            pygame.draw.line(self.screen, RED, (50 + text.get_width(), 50 + text.get_height()/2), (50 + text.get_width() + self.reloadtime, 50 + text.get_height()/2), 10)
         if self.reloadtime == 0:
-            self.reloading = False
             self.reloadtime = self.defreloadtime
             self.bulletsleft = self.defbulletsleft
 
-        self.drawstats()
+        text = font.render("Bullets left: " + str(round(self.bulletsleft)), True, (0, 0, 0))
+        self.screen.blit(text, (50, 30))
+
+        text = font.render("Fuel left: ", True, (0, 0, 0))
+        self.screen.blit(text, (50 ,10))
+        if self.fuel > 0:
+            pygame.draw.line(self.screen, self.fuellinecolor, (50 + text.get_width(), text.get_height()/2 + 10), (50 + text.get_width() + self.fuel/33.3, text.get_height()/2 + 10), 10)
+
 
         if self.fuel > 0:
             if self.moving_left:
@@ -510,7 +355,6 @@ class Gun:
         else:
             self.fuel = 0
 
-        self.power_up()
 
 
     def move(self, event):
@@ -518,40 +362,27 @@ class Gun:
         Управление танком с клавиатуры, перемещение вправо, влево, перезарядка
         """
         if event.type == pygame.KEYDOWN:
-            if event.key == self.k_move_backward:
+            if event.key == pygame.K_a:
                 self.moving_left = True
-            if event.key == self.k_move_forward:
+            if event.key == pygame.K_d:
                 self.moving_right = True
-            if event.key == self.k_reload and self.bulletsleft != self.defbulletsleft:
+            if event.key == pygame.K_r and self.bulletsleft != self.defbulletsleft:
                 self.bulletsleft = 0
-                self.reloading = True
         if event.type == pygame.KEYUP:
-            if event.key == self.k_move_backward:
+            if event.key == pygame.K_a:
                 self.moving_left = False
-            if event.key == self.k_move_forward:
+            if event.key == pygame.K_d:
                 self.moving_right = False
-
-        if self.controltype == 1:
-            if event.type == pygame.KEYDOWN:
-                if event.key == self.k_fire:
-                    self.fire2_start()
-            if event.type == pygame.KEYUP:
-                if event.key == self.k_fire:
-                    self.fire2_end()
-
-        if self.controltype == 0:
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                self.fire2_start()
-            if event.type == pygame.MOUSEBUTTONUP:
-                self.fire2_end()
-
 
 
     def power_up(self):
         # Увеличение мощности пушки при зажатой ЛКМ.
-        if self.f2_power < 50 and self.f2_on:
-            self.f2_power += 1
-
+        if self.f2_on:
+            if self.f2_power < 50:
+                self.f2_power += 1
+            self.color = RED
+        else:
+            self.color = GREY
 
 # Класс для мишеней
 class Target:
@@ -566,8 +397,8 @@ class Target:
         self.live = True
         self.defcooldown = self.cooldown = 90
 
-        x = self.x = random.randint(200,HEIGHT - 50)
-        y = self.y = random.randint(200, WIDTH - 200)
+        x = self.x = random.randint(500, 780)
+        y = self.y = random.randint(200, 550)
         r = self.r = random.randint(10, 30)
         color = self.color = RED
         self.reward = 60 - self.r
@@ -584,8 +415,8 @@ class Target:
 
     def new_target(self):
         """ Инициализация новой цели. """
-        x = self.x = random.randint(200, HEIGHT - 50)
-        y = self.y = random.randint(200, WIDTH - 200)
+        x = self.x = random.randint(500, 780)
+        y = self.y = random.randint(200, 550)
         r = self.r = random.randint(10, 30)
         color = self.color = RED
         self.reward = 60 - self.r
@@ -633,43 +464,38 @@ class Target:
             if self.y < self.endpoint or self.y > self.startpoint:
                 self.speed *= -1
 
-resetbutton = Button(screen, 690, 10, 100, 50, 'reset', 1)
-helpbutton = Button(screen, 690, 70, 100, 50, 'help', 1)
+points = 0
+bullet = 0
+balls = []
+particles = []
+clock = pygame.time.Clock()
+gun = Gun(screen)
+targets = [Target(screen, i%3) for i in range(6)]
+resetbutton = Button(screen, 500, 10, 100, 50, 'reset')
 
 # Сброс игры до начального положения
 def new_game():
+    global points
     global bullet
     global balls
     global particles
     global clock
     global gun
     global targets
+    points = 0
     bullet = 0
     balls = []
     particles = []
     clock = pygame.time.Clock()
-    gun = [Gun(screen, 1) for i in range(2)]
+    gun = Gun(screen)
     targets = [Target(screen, i % 3) for i in range(6)]
 
-    gun[0].name = "Player 1"
-
-    gun[1].setgunstats(pygame.K_RIGHT, pygame.K_LEFT, pygame.K_UP, pygame.K_DOWN, pygame.K_RSHIFT, pygame.K_RCTRL, 300, 50)
-    gun[1].name = "Player 2"
-    gun[1].x = 600
-    gun[1].an = math.pi - 1
-    gun[1].color = (120, 120, 30)
-
-new_game()
 finished = False
 while not finished:
     clock.tick(FPS)
     pygame.draw.rect(screen, WHITE, (0, 0, WIDTH, HEIGHT))
-    for g in gun:
-        g.update()
-
+    gun.update()
     resetbutton.draw()
-    helpbutton.draw()
-
     for p in particles:
         p.update()
         if p.alpha < 0:
@@ -679,16 +505,16 @@ while not finished:
     for b in balls:
         b.update()
         for t in targets:
-            if t.live:
-                if b.hittest(t):
-                    b.parent.score += t.hit()
+            if b.hittest(t):
+                points += t.hit()
         for b2 in balls:
             if b2 != b:
                 b.hittest(b2)
         if b.alpha == 0:
             balls.remove(b)
         b.draw()
-
+    text = font.render("Score: " + str(round(points)), True, (0, 0, 0))
+    screen.blit(text, (WIDTH - 150, 30))
     pygame.display.update()
 
     for event in pygame.event.get():
@@ -696,12 +522,14 @@ while not finished:
             finished = True
         elif resetbutton.check(event):
             new_game()
-        elif helpbutton.check(event):
-            help()
         elif not resetbutton.pressed:
-            for g in gun:
-                g.targetting(event)
-                g.move(event)
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                gun.fire2_start(event)
+            elif event.type == pygame.MOUSEBUTTONUP:
+                gun.fire2_end(event)
+            gun.targetting(event)
+            gun.move(event)
 
+    gun.power_up()
 
 pygame.quit()
