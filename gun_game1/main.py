@@ -771,8 +771,8 @@ while not finished:
     for t in targets:
         t.update()
         #for t2 in targets:
-         #   if t != t2:
-          #      t.collisioncheck(t2)
+        #   if t != t2:
+        #      t.collisioncheck(t2)
         if t.movingtype == 3 and not t.live:
             targets.remove(t)
     for b in balls:
