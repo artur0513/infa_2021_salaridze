@@ -64,26 +64,23 @@ def help():
     help_text.append("Управление у первого игрока: ")
     help_text.append("   A, D - двигать танк; W, S - целиться;")
     help_text.append("   E - зажимать для стрельбы; R - перезарядка;")
+    help_text.append("   Q - сменить тип патронов;")
 
     help_text.append("Управление у второго игрока: ")
     help_text.append("   стрелочки вправо и влево - двигать танк;")
     help_text.append("   стрелочки вверх и вниз - целиться;")
     help_text.append("   RSHIFT - зажимать для стрельбы;")
     help_text.append("   RCTRL - перезарядка;")
+    help_text.append("   ENTER - сменить тип патронов;")
 
     help_text.append("Если патроны закончились - ")
-    help_text.append("                        перезаряжаться нужно вручную")
+    help_text.append("перезаряжаться нужно вручную.")
 
-    text.append(font.render(help_text[0], True, BLACK))
-    text.append(font.render(help_text[1], True, BLACK))
-    text.append(font.render(help_text[2], True, BLACK))
-    text.append(font.render(help_text[3], True, BLACK))
-    text.append(font.render(help_text[4], True, BLACK))
-    text.append(font.render(help_text[5], True, BLACK))
-    text.append(font.render(help_text[6], True, BLACK))
-    text.append(font.render(help_text[7], True, BLACK))
-    text.append(font.render(help_text[8], True, BLACK))
-    text.append(font.render(help_text[9], True, BLACK))
+    help_text.append("Серый эллипс скидывает новые мишени,")
+    help_text.append("только если их становится меньше 10.")
+
+    for i in range(len(help_text)):
+        text.append(font.render(help_text[i], True, BLACK))
 
     size_x = 500
     size_y = 400
@@ -109,7 +106,7 @@ def help():
         screen.blit(helpsurface1, (help_x, help_y))
 
         y = help_y + 10
-        for i in range(10):
+        for i in range(len(text)):
             screen.blit(text[i], (help_x + 10, y))
             y += text[i].get_height()
 
@@ -352,6 +349,7 @@ class Gun:
         self.k_targeting_down = pygame.K_s
         self.k_fire = pygame.K_e
         self.k_reload = pygame.K_r
+        self.changebullettype = pygame.K_q
 
         self.statx = 50
         self.staty = 50
@@ -363,12 +361,15 @@ class Gun:
 
         self.reloading = False
 
-    def setgunstats(self, k_move_forward, k_move_backward, k_targeting_up, k_targeting_down, k_fire, k_reload, statx, staty):
+        self.bullettype = 0
+
+    def setgunstats(self, k_move_forward, k_move_backward, k_targeting_up, k_targeting_down, k_fire, changebullettype, k_reload, statx, staty):
         self.k_move_forward = k_move_forward
         self.k_move_backward = k_move_backward
         self.k_targeting_up = k_targeting_up
         self.k_targeting_down = k_targeting_down
         self.k_fire = k_fire
+        self.changebullettype = changebullettype
         self.k_reload = k_reload
         self.statx = statx
         self.staty = staty
@@ -378,16 +379,16 @@ class Gun:
         if self.bulletsleft > 0:
             self.f2_on = 1
 
-    def fire2_end(self):
+    def fire2_end(self, bullettype):
         """Выстрел мячом.
 
         Происходит при отпускании кнопки мыши.
         Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
         """
         global balls, bullet
-        if self.bulletsleft > 0:
+        if self.bulletsleft > 0 and bullettype == 0:
             bullet += 1
-            new_ball = Ball(self.screen, self.x, self.y)
+            new_ball = Ball(self.screen, self.x + self.f2_power * math.cos(self.an), self.y + self.f2_power * math.sin(-self.an))
             new_ball.r += 5
             new_ball.vx = self.f2_power * math.cos(self.an)
             new_ball.vy = - self.f2_power * math.sin(-self.an)
@@ -396,6 +397,18 @@ class Gun:
             self.f2_on = 0
             self.f2_power = 10
             self.bulletsleft -= 1
+        if self.bulletsleft > 0 and bullettype == 1:
+            bullet += 3
+            for i in range(3):
+                new_ball = Ball(self.screen, self.x + math.cos(self.an + (i-1)*0.3) * 30, self.y + math.sin(-self.an - (i-1)*0.3) * 30)
+                new_ball.vx = self.f2_power * math.cos(self.an + (i-1)*0.3) / 1.3
+                new_ball.vy = - self.f2_power * math.sin(-self.an - (i-1)*0.3) / 1.3
+                new_ball.parent = self
+                balls.append(new_ball)
+            self.f2_on = 0
+            self.f2_power = 10
+            self.bulletsleft -= 1
+
 
     def targetting(self, event):
         """Прицеливание. Зависит от положения мыши."""
@@ -525,6 +538,8 @@ class Gun:
             if event.key == self.k_reload and self.bulletsleft != self.defbulletsleft:
                 self.bulletsleft = 0
                 self.reloading = True
+            if event.key == self.changebullettype:
+                self.bullettype = (self.bullettype + 1)%2
         if event.type == pygame.KEYUP:
             if event.key == self.k_move_backward:
                 self.moving_left = False
@@ -537,15 +552,13 @@ class Gun:
                     self.fire2_start()
             if event.type == pygame.KEYUP:
                 if event.key == self.k_fire:
-                    self.fire2_end()
+                    self.fire2_end(self.bullettype)
 
         if self.controltype == 0:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.fire2_start()
             if event.type == pygame.MOUSEBUTTONUP:
                 self.fire2_end()
-
-
 
     def power_up(self):
         # Увеличение мощности пушки при зажатой ЛКМ.
@@ -581,6 +594,10 @@ class Target:
             self.startpoint = self.y
             self.endpoint = self.y + random.randint(-200, -50)
             self.speed = random.randint(1, 4)
+
+        if self.movingtype == 3:
+            self.vx = 0
+            self.vy = 0
 
     def new_target(self):
         """ Инициализация новой цели. """
@@ -633,6 +650,80 @@ class Target:
             if self.y < self.endpoint or self.y > self.startpoint:
                 self.speed *= -1
 
+        if self.movingtype == 3:
+            self.x += self.vx
+            self.y -= self.vy
+
+            if self.x > WIDTH - self.r and self.vx > 0:
+                self.vx *= -0.8
+                self.vy *= 0.8
+                self.x = WIDTH - self.r
+            if self.y > HEIGHT - self.r and self.vy < 0:
+                self.vy *= -0.8
+                self.vx *= 0.8
+                self.y = HEIGHT - self.r
+            if self.x < self.r and self.vx < 0:
+                self.vx *= -0.8
+                self.vy *= 0.8
+                self.x = self.r
+            self.vy -= 1
+
+    def collisioncheck(self, obj):
+        if self.movingtype == 3:
+            dist = (self.x - obj.x) ** 2 + (self.y - obj.y) ** 2 - (self.r + obj.r) ** 2
+            if dist < 0:
+                if obj.movingtype == 0:
+                    objvx = 0
+                    objvy = 0
+                if obj.movingtype == 1:
+                    objvx = obj.speed
+                    objvy = 0
+                if obj.movingtype == 2:
+                    objvx = 0
+                    objvy = obj.speed
+                if obj.movingtype == 3:
+                    objvx = obj.vx
+                    objvy = obj.vy
+                p1 = complex(self.x, self.y)
+                p2 = complex(obj.x, obj.y)
+                v1 = complex(self.vx, self.vy)
+                v2 = complex(objvx, objvy)
+                p12 = p1 - p2
+                d = ((v1 - v2) / p12).real * p12
+                self.vx = (v1 - d).real
+                self.vy = (v1 - d).imag
+                if obj.movingtype == 3:
+                    obj.vx = (v2 + d).real
+                    obj.vy = (v2 + d).imag
+
+class TargetSpawner:
+    def __init__(self, _screen):
+        self.x = 0
+        self.y = 150
+        self.vx = 5
+        self.screen = _screen
+        self.cooldown = self.defcooldown = 60
+
+    def draw(self):
+        pygame.draw.ellipse(self.screen, GREY, (self.x - 50, self.y - 20, 100, 40))
+
+    def update(self):
+        self.x += self.vx
+        self.draw()
+        if self.cooldown < 0 and len(targets) < 10:
+            self.cooldown = self.defcooldown
+            new_target = Target(self.screen, 3)
+            new_target.x = self.x
+            new_target.y = self.y
+            new_target.vx = self.vx
+            targets.append(new_target)
+        if len(targets) < 10:
+            self.cooldown -= 1
+        if self.x > WIDTH - 50 and self.vx > 0:
+            self.vx *= -1
+        if self.x < 50 and self.vx < 0:
+            self.vx *= -1
+
 resetbutton = Button(screen, 690, 10, 100, 50, 'reset', 1)
 helpbutton = Button(screen, 690, 70, 100, 50, 'help', 1)
 
@@ -644,16 +735,18 @@ def new_game():
     global clock
     global gun
     global targets
+    global targetspawner
     bullet = 0
     balls = []
     particles = []
     clock = pygame.time.Clock()
     gun = [Gun(screen, 1) for i in range(2)]
     targets = [Target(screen, i % 3) for i in range(6)]
+    targetspawner = TargetSpawner(screen)
 
     gun[0].name = "Player 1"
 
-    gun[1].setgunstats(pygame.K_RIGHT, pygame.K_LEFT, pygame.K_UP, pygame.K_DOWN, pygame.K_RSHIFT, pygame.K_RCTRL, 300, 50)
+    gun[1].setgunstats(pygame.K_RIGHT, pygame.K_LEFT, pygame.K_UP, pygame.K_DOWN, pygame.K_RSHIFT, pygame.K_RETURN, pygame.K_RCTRL, 300, 50)
     gun[1].name = "Player 2"
     gun[1].x = 600
     gun[1].an = math.pi - 1
@@ -669,6 +762,7 @@ while not finished:
 
     resetbutton.draw()
     helpbutton.draw()
+    targetspawner.update()
 
     for p in particles:
         p.update()
@@ -676,6 +770,11 @@ while not finished:
             particles.remove(p)
     for t in targets:
         t.update()
+        #for t2 in targets:
+         #   if t != t2:
+          #      t.collisioncheck(t2)
+        if t.movingtype == 3 and not t.live:
+            targets.remove(t)
     for b in balls:
         b.update()
         for t in targets:
@@ -702,6 +801,5 @@ while not finished:
             for g in gun:
                 g.targetting(event)
                 g.move(event)
-
 
 pygame.quit()
